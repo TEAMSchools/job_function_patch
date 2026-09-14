@@ -208,9 +208,10 @@ def build_mentions(client: WebClient, recipients: list[str]) -> str:
 def send_alert(config: SlackConfig, issues: list[StaffIssue]) -> None:
     """Post a summary to the alert channel, with the detail rows in its thread."""
     client = WebClient(token=config.token)
-    mentions = build_mentions(client, config.recipients)
     today = date.today().strftime("%b %d, %Y")
 
+    # The all-clear posts without mentions on purpose. Pinging people daily to
+    # say nothing happened is how an alert channel gets muted.
     if not issues:
         post_message(
             client,
@@ -222,8 +223,9 @@ def send_alert(config: SlackConfig, issues: list[StaffIssue]) -> None:
     summary = post_message(
         client,
         config.channel,
-        f"{mentions} :rotating_light: Job function check — {today}: "
-        f"*{len(issues)} issue(s)* found. Details in thread.",
+        f"{build_mentions(client, config.recipients)} :rotating_light: "
+        f"Job function check — {today}: *{len(issues)} issue(s)* found. "
+        "Details in thread.",
     )
 
     for chunk in build_reply_chunks(issues):
@@ -336,11 +338,6 @@ def main() -> None:
         help="Print the results to the terminal instead of sending to Slack.",
     )
     parser.add_argument(
-        "--notify-when-clean",
-        action="store_true",
-        help="Post an all-clear message to Slack even when nothing is returned.",
-    )
-    parser.add_argument(
         "--test-slack",
         action="store_true",
         help="Check the Slack token, scopes, recipients, and channel. Posts nothing.",
@@ -370,12 +367,11 @@ def main() -> None:
             print(issue.to_line())
         return
 
-    if not issues and not args.notify_when_clean:
-        print("0 issues found. No Slack alert sent.")
-        return
-
     send_alert(slack_config, issues)
-    print(f"{len(issues)} issue(s) found. Slack alert sent.")
+    if issues:
+        print(f"{len(issues)} issue(s) found. Slack alert sent.")
+    else:
+        print("0 issues found. All-clear posted to Slack.")
 
 
 if __name__ == "__main__":

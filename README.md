@@ -2,10 +2,15 @@
 
 A little tool to help us squash job function problems until we can figure out what the hell is going on.
 
-`job_function_check.py` runs `function_check.sql` against BigQuery. If the query
-returns anything, it posts a one-line summary to a Slack channel, @-mentions the
-two people who need to act on it, and puts every offending row in that message's
-thread. If the query returns nothing, it stays quiet.
+`job_function_check.py` runs `function_check.sql` against BigQuery and posts the
+result to a Slack channel either way:
+
+- **Issues found** — a summary that @-mentions the two people who need to act on
+  it, with every offending row in that message's thread.
+- **Nothing found** — a short all-clear, posted *without* mentions. Daily pings
+  that say "nothing happened" are how a channel gets muted.
+
+Either way you get one message per run, so silence means the job didn't run.
 
 ## Setup
 
@@ -109,14 +114,11 @@ python job_function_check.py --test-slack
 # Same, but actually post a test message into the channel
 python job_function_check.py --test-slack --post-test-message
 
-# Normal run - alerts only if the query returns rows
+# Normal run - posts either the alert or an all-clear
 python job_function_check.py
 
 # See what would be sent without posting to Slack
 python job_function_check.py --dry-run
-
-# Also post an "all clear" when nothing is wrong
-python job_function_check.py --notify-when-clean
 
 # Point at a different query file
 python job_function_check.py --sql some_other_check.sql
@@ -124,6 +126,39 @@ python job_function_check.py --sql some_other_check.sql
 
 Exit code is 0 on success and non-zero if configuration, the query, or Slack
 fails, so it drops into Task Scheduler or cron as-is.
+
+## Scheduling it
+
+`run_check.bat` wraps the script for Windows. It switches to the repo folder
+first, so it works from any working directory, and it passes arguments through:
+
+```bat
+run_check.bat
+run_check.bat --test-slack
+```
+
+Output goes to the screen *and* appends to `logs\job_function_check.log` with
+timestamps, so a scheduled run leaves a trail. The `logs\` folder is gitignored.
+
+**Don't run `--dry-run` through the .bat** — it prints staff names and employee
+numbers, which would then sit in the log in plain text. Run that one directly.
+
+### Task Scheduler
+
+Create a Basic Task, set your trigger, and choose *Start a program*:
+
+| Field | Value |
+| --- | --- |
+| Program/script | `C:\Users\...\job_function_patch\run_check.bat` |
+| Start in | `C:\Users\...\job_function_patch` |
+
+Use *Run whether user is logged on or not* so it fires on a closed laptop.
+
+Task Scheduler runs with a thinner `PATH` than your shell, so if it fails with
+"python is not recognized", edit the `PYTHON` line near the top of the .bat to
+the full interpreter path (`C:\Python314\python.exe`). The .bat returns the
+script's exit code, so genuine failures show as failed tasks in the scheduler's
+history rather than silently passing.
 
 ## A note on the data
 
