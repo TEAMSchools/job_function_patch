@@ -4,6 +4,8 @@
 # macOS/Linux counterpart to run_check.bat. Safe to point launchd
 # (or cron) at this file.
 #
+# Runs in the project venv, called by absolute path so it doesn't depend on PATH.
+#
 # Arguments are passed through, so these work too:
 #     ./run_check.sh --test-slack
 #     ./run_check.sh --test-slack --post-test-message
@@ -22,28 +24,40 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-# launchd runs with a much thinner PATH than your shell -- thinner than
-# Windows Task Scheduler's, so a bare `python3` often isn't found at all.
-# Prefer a venv in this folder, then $PYTHON, then PATH. To pin it
-# explicitly instead, export PYTHON=/full/path/to/python before calling,
-# or hardcode it here.
-if [ -z "${PYTHON:-}" ]; then
-    for candidate in \
-        "$SCRIPT_DIR/.venv/bin/python" \
-        "$SCRIPT_DIR/venv/bin/python"
-    do
-        if [ -x "$candidate" ]; then
-            PYTHON="$candidate"
-            break
-        fi
-    done
-fi
-PYTHON="${PYTHON:-python3}"
+VENV_DIR="$SCRIPT_DIR/.venv"
 
 mkdir -p logs
 LOGFILE="logs/job_function_check.log"
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] starting" >> "$LOGFILE"
+
+# ── Venv ──────────────────────────────────────────────────────────────────────
+#
+# launchd runs with a much thinner PATH than your shell -- thinner than Windows
+# Task Scheduler's, so a bare `python3` often isn't found at all. Calling the
+# venv's python by absolute path sidesteps PATH entirely.
+#
+# Set PYTHON=/full/path/to/python before calling to bypass the venv and use a
+# specific interpreter instead.
+
+# Build the venv on first run, or if it's been deleted, so a fresh clone works.
+if [ -z "${PYTHON:-}" ] && [ ! -x "$VENV_DIR/bin/python" ]; then
+    echo "No venv found -- creating one at $VENV_DIR" | tee -a "$LOGFILE"
+    if ! python3 -m venv "$VENV_DIR" \
+        || ! "$VENV_DIR/bin/python" -m pip install --quiet --upgrade pip \
+        || ! "$VENV_DIR/bin/pip" install --quiet -r "$SCRIPT_DIR/requirements.txt"
+    then
+        echo "Venv setup FAILED. See $SCRIPT_DIR/$LOGFILE." | tee -a "$LOGFILE"
+        exit 1
+    fi
+    echo "Venv created and dependencies installed." | tee -a "$LOGFILE"
+fi
+
+# No `activate` needed: python reads pyvenv.cfg next to this binary and sets
+# sys.prefix from it, so calling it by path gives the venv's site-packages.
+PYTHON="${PYTHON:-$VENV_DIR/bin/python}"
+
+# ── Run ───────────────────────────────────────────────────────────────────────
 
 # Show this run's output on screen (for a manual run) and keep it in the
 # rolling log (for a scheduled run nobody is watching). PIPESTATUS[0] is
