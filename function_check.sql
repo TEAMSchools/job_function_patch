@@ -99,7 +99,7 @@ where sr.assignment_status != "Terminated" and (
 (sr.job_title = 'Bus Driver' AND job_function != 'ADSOs, Ops-SOMs, AOMs, & Receptionists') OR
 (sr.job_title = 'Transportation Manager' AND job_function != 'ADSOs, Ops-SOMs, AOMs, & Receptionists') OR
 (sr.job_title = 'Director of Orchestra and Music' AND job_function != 'Teacher') OR
-(sr.job_title = 'Registrar' AND job_function != '') OR
+(sr.job_title = 'Registrar' AND job_function != 'KTAF or Regional Staff') OR
 (sr.job_title = 'Canvasser' AND job_function != 'ADSOs, Ops-SOMs, AOMs, & Receptionists') OR
 (sr.job_title = 'Chief Academic Officer' AND job_function != 'Chief Level') OR
 (sr.job_title = 'Achievement Director' AND job_function != 'KTAF or Regional Director') OR
