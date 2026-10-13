@@ -16,6 +16,7 @@ select sr.employee_number,
 from `kipptaf_people.int_people__staff_roster` as sr
 where sr.assignment_status != "Terminated" and (
 (sr.job_title = 'Academic Operations Manager' AND job_function != 'ADSOs, Ops-SOMs, AOMs, & Receptionists') OR
+(sr.job_title = 'Associate Director of Academic Operations' AND job_function != 'ADSOs, Ops-SOMs, AOMs, & Receptionists') OR
 (sr.job_title = 'Assistant School Leader, SPED' AND job_function != 'Assistant School Leaders') OR
 (sr.job_title = 'Speech Language Pathologist' AND job_function != 'School-based Non-Instructional Staff') OR
 (sr.job_title = 'Student Support Advocate' AND job_function != 'School-based Non-Instructional Staff') OR

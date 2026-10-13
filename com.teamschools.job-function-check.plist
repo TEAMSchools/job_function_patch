@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.teamschools.job-function-check</string>
+
+    <!-- run_check.sh cds to its own directory and uses the repo venv by
+         absolute path, so launchd only has to invoke it. -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/kverhoff/github/job_function_patch/run_check.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kverhoff/github/job_function_patch</string>
+
+    <!-- Weekdays at 09:00 local. Weekday 1-5 = Mon-Fri. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <!-- false on purpose: loading this plist must NOT post to Slack.
+         launchd still runs a missed slot once on wake, so a closed laptop
+         delays the check rather than skipping the day. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- run_check.sh tees to logs/job_function_check.log itself. These catch
+         failures before that works (launchd refusing to start it, etc.). -->
+    <key>StandardOutPath</key>
+    <string>/Users/kverhoff/github/job_function_patch/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kverhoff/github/job_function_patch/logs/launchd.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
